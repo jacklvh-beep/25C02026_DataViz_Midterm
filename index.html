@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>25C02026_DataViz_Midterm</title>
+  <meta name="description" content="Trực quan hóa tương tác dữ liệu Doanh số bán lẻ đô thị TP.HCM 2025 – Lê Văn Hoàng Son – 25C02026">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+</head>
+<body>
+
+<!-- ============ 1. INTRODUCTION ============ -->
+<header class="hero" id="intro">
+  <div class="container">
+    <p class="eyebrow">25C02026_DataViz_Midterm</p>
+    <h1>Doanh số bán lẻ đô thị TP.HCM 2025: Bán nhiều chưa chắc lãi nhiều</h1>
+    <p class="lead">Phân tích tương tác 240 giao dịch bán lẻ tại 4 chi nhánh TP.HCM năm 2025 — điều gì thực sự tạo ra lợi nhuận?</p>
+    <div class="student">
+      <span><b>Họ tên:</b> Lê Văn Hoàng Son</span>
+      <span><b>MSHV:</b> 25C02026</span>
+      <span><b>Môn:</b> Trực quan hóa dữ liệu</span>
+      <span><b>Đồ án:</b> Đồ án giữa kỳ – Trực quan hóa dữ liệu tương tác</span>
+    </div>
+  </div>
+</header>
+
+<div class="todo-banner" id="todo-banner" hidden>
+  <div class="container">
+    ✏️ Còn <span id="todo-count">0</span> ô màu vàng cần hoàn thiện trước khi nộp.
+  </div>
+</div>
+
+<!-- Thanh bộ lọc toàn cục (coordinated filtering) -->
+<div class="filterbar" id="filterbar">
+  <div class="container">
+    <div class="filter-row">
+      <div class="filter-group" data-dim="Store"><span class="filter-label">Cửa hàng</span><div class="chips"></div></div>
+      <div class="filter-group" data-dim="Product_Category"><span class="filter-label">Danh mục</span><div class="chips"></div></div>
+      <div class="filter-group" data-dim="Customer_Type"><span class="filter-label">Khách hàng</span><div class="chips"></div></div>
+      <div class="filter-group" data-dim="Payment_Method"><span class="filter-label">Thanh toán</span><div class="chips"></div></div>
+      <div class="filter-group">
+        <span class="filter-label">Tháng</span>
+        <div class="month-range">
+          <select id="month-from" aria-label="Từ tháng"></select>
+          <span>→</span>
+          <select id="month-to" aria-label="Đến tháng"></select>
+        </div>
+      </div>
+    </div>
+    <div class="filter-status">
+      <span id="filter-status">Đang tải dữ liệu…</span>
+      <button class="btn-reset" id="btn-reset" type="button">↺ Bỏ lọc</button>
+      <button class="btn-collapse" id="btn-collapse" type="button" aria-expanded="true">Thu gọn bộ lọc</button>
+    </div>
+  </div>
+</div>
+
+<nav class="toc container" aria-label="Mục lục">
+  <a href="#intro">1. Giới thiệu</a>
+  <a href="#overview">2. Hiệu suất tổng thể</a>
+  <a href="#trends">3. Xu hướng</a>
+  <a href="#customers">4. Khách hàng &amp; giao dịch</a>
+  <a href="#relations">5. Quan hệ &amp; quy luật</a>
+  <a href="#key-insights">6. Phát hiện chính</a>
+  <a href="#lookup">7. Tra cứu giao dịch</a>
+  <a href="#conclusion">8. Kết luận</a>
+</nav>
+
+<main class="container">
+
+  <section class="section" id="dataset">
+    <h2>Tổng quan bộ dữ liệu</h2>
+    <div class="grid-2">
+      <div class="card">
+        <p><b>Doanh số bán lẻ đô thị TP.HCM 2025</b>: 240 giao dịch từ 04/01/2025 đến 30/12/2025, 17 cột, thuộc 4 cửa hàng (Quận 1, Quận 3, Quận 7, Thủ Đức), 5 danh mục với 20 sản phẩm, 4 nhóm khách hàng và 4 phương thức thanh toán.</p>
+        <ul class="tight">
+          <li><b>Biến phân loại:</b> Store, Product_Category, Product, Customer_Type, Payment_Method</li>
+          <li><b>Biến thời gian:</b> Date, Month, Day_of_Week</li>
+          <li><b>Biến định lượng:</b> Quantity, Unit_Price (₫), Discount (%), Revenue, Cost, Profit (₫), Customer_Rating (1–5), Delivery_Days (ngày)</li>
+          <li><b>Việt hóa nhãn:</b> giá trị trong tệp CSV gốc là tiếng Anh; trang hiển thị bản dịch tiếng Việt của tên cửa hàng, danh mục, sản phẩm, thứ trong tuần, nhóm khách hàng và phương thức thanh toán. Tên biến (cột) được giữ nguyên.</li>
+          <li><b>Biến tự tính:</b> Biên lợi nhuận = Profit ÷ Revenue × 100%. Đơn vị tiền: <b>Tr</b> = triệu đồng. Biên của một nhóm = tổng lợi nhuận ÷ tổng doanh thu của nhóm.</li>
+        </ul>
+        <p class="note"><b>Câu hỏi phân tích chính:</b> Cửa hàng/danh mục bán nhiều nhất có phải là nơi tạo ra nhiều lợi nhuận nhất không? Nếu không, yếu tố nào (cơ cấu sản phẩm, giảm giá, mùa vụ, giao hàng) giải thích sự chênh lệch?</p>
+      </div>
+      <div class="card">
+        <h3 class="card-title">Kiểm tra chất lượng dữ liệu</h3>
+        <ul class="tight" id="dq-list"><li>Đang kiểm tra…</li></ul>
+        <p class="note">Ô trống được <b>bỏ qua</b> khi tính trung bình (không thay bằng 0). Tọa độ song song chỉ dùng các giao dịch đủ dữ liệu.</p>
+      </div>
+    </div>
+    <details class="howto" open>
+      <summary>Cách sử dụng trang này</summary>
+      <ul class="tight">
+        <li>Bấm các nút ở <b>thanh bộ lọc</b> (luôn ghim ở đầu trang) để bật/tắt cửa hàng, danh mục, nhóm khách, phương thức thanh toán; chọn khoảng tháng. <b>Mọi biểu đồ và chỉ số cập nhật cùng lúc.</b></li>
+        <li><b>Bấm vào một cột / lát / điểm trên bản đồ</b> để lọc nhanh theo giá trị đó (bấm lần nữa để bỏ lọc).</li>
+        <li><b>Rê chuột</b> để xem số liệu chi tiết; <b>bấm vào chú thích</b> để ẩn/hiện một nhóm.</li>
+        <li>Biểu đồ phân tán: <b>kéo chuột để phóng to</b>, nhấp đúp để trở lại; <b>bấm một điểm</b> để mở bảng chi tiết giao dịch.</li>
+        <li>Tọa độ song song: <b>kéo chuột dọc theo một trục</b> để chọn khoảng giá trị (quét chọn); danh sách giao dịch được chọn hiện ngay bên dưới.</li>
+      </ul>
+    </details>
+  </section>
+
+  <!-- ============ 2. OVERALL SALES PERFORMANCE ============ -->
+  <section class="section" id="overview">
+    <h2><span class="num">2</span> Hiệu suất bán hàng tổng thể</h2>
+    <p class="kpi-summary" id="kpi-summary"></p>
+    <div class="kpis" id="kpis"></div>
+    <p class="note kpi-unit">Trong các biểu đồ bên dưới, <b>Tr</b> = triệu đồng. Khi bật bộ lọc, dòng nhỏ dưới mỗi số so sánh với toàn bộ dữ liệu (<span class="up">▲ tốt hơn</span> / <span class="down">▼ kém hơn</span>).</p>
+
+    <article class="insight" id="insight-1" data-n="1">
+      <header class="insight-head">
+        <span class="tag">Câu hỏi 1</span>
+        <p class="question">Bán được nhiều tiền có đồng nghĩa với kiếm được nhiều lời không?</p>
+        <span class="answer-label">Phát hiện</span>
+        <h3>Ngành Điện tử dẫn đầu doanh thu nhưng biên lợi nhuận chỉ bằng một nửa ngành Thời trang</h3>
+      </header>
+      <div class="grid-2">
+        <figure class="chart-card">
+          <figcaption>Doanh thu, lợi nhuận (Tr) và biên lợi nhuận (%) theo danh mục. Bấm một cột để lọc theo danh mục.</figcaption>
+          <div class="chart" id="c-category"></div>
+        </figure>
+        <figure class="chart-card">
+          <figcaption>Biểu đồ ô phân cấp Danh mục → Sản phẩm: diện tích = doanh thu, màu = biên lợi nhuận (cam = thấp, xanh = cao). Bấm vào một ô để xem chi tiết.</figcaption>
+          <div class="chart" id="c-treemap"></div>
+        </figure>
+      </div>
+      <div class="explain">
+        <div><h4>Biểu đồ cho thấy</h4><p>Dùng <b>cột nhóm</b> vì cần so sánh hai đại lượng (doanh thu, lợi nhuận) giữa các danh mục rời rạc, và độ dài cột là kênh mắt người so sánh chính xác nhất; đường biên lợi nhuận dùng trục phải vì khác đơn vị (%). Thêm <b>biểu đồ ô phân cấp</b> vì dữ liệu có phân cấp Danh mục → Sản phẩm. Cột xám là doanh thu, cột xanh lục là lợi nhuận, đường cam là biên lợi nhuận (trục phải). Điện tử có cột doanh thu cao nhất (63,8 Tr, khoảng 34% tổng doanh thu) nhưng đường biên chạm đáy (15,3%). Trong biểu đồ ô phân cấp, khối Điện tử to nhưng toàn màu cam.</p></div>
+        <div><h4>Quy luật phát hiện</h4><p>Thời trang có doanh thu thấp hơn (51,7 Tr) nhưng lợi nhuận cao nhất (17,4 Tr, gấp khoảng 1,8 lần Điện tử) nhờ biên 33,6%. Biên Điện tử thấp ở <b>cả 4 cửa hàng</b> (14–17%), và kể cả khi giảm giá ≤ 10% vẫn chỉ đạt 19,2% (so với 37,3% của Thời trang). Vậy biên thấp là do <b>giá vốn cao</b>, không phải do khuyến mãi. Tai nghe không dây là ví dụ rõ nhất: doanh thu 21,8 Tr nhưng biên 12,3%. Ngược lại, Áo khoác là sản phẩm lãi nhiều nhất (6,3 Tr).</p></div>
+        <div><h4>Vì sao quan trọng</h4><p>Nếu chỉ nhìn doanh thu, nhà bán lẻ sẽ ưu tiên nhầm danh mục. Thời trang mới là "động cơ lợi nhuận". Với Điện tử, cần đàm phán lại giá nhập hoặc bán kèm phụ kiện có biên cao, thay vì chạy theo doanh số.</p></div>
+      </div>
+    </article>
+
+    <article class="insight" id="insight-2" data-n="2">
+      <header class="insight-head">
+        <span class="tag">Câu hỏi 2</span>
+        <p class="question">Vì sao cửa hàng bán chạy nhất lại có biên lợi nhuận thấp nhất?</p>
+        <span class="answer-label">Phát hiện</span>
+        <h3>Quận 1 bán nhiều nhất nhưng biên lợi nhuận thấp nhất, vì hơn nửa doanh thu đến từ Điện tử</h3>
+      </header>
+      <figure class="chart-card">
+        <figcaption>Cơ cấu doanh thu theo danh mục của từng cửa hàng (% doanh thu cửa hàng). Điện tử đặt ở đáy để dễ so sánh. Số phía trên cột: biên lợi nhuận và tổng doanh thu cửa hàng. Bấm một cột để lọc theo cửa hàng.</figcaption>
+        <div class="chart" id="c-storemix"></div>
+      </figure>
+      <div class="explain">
+        <div><h4>Biểu đồ cho thấy</h4><p>Mỗi cột là một cửa hàng, cao 100%. Mỗi đoạn màu là tỷ trọng doanh thu của một danh mục. Dùng cột chồng tương đối vì câu hỏi ở đây là <b>cơ cấu</b> (thành phần), không phải độ lớn tuyệt đối. Điện tử nằm ở đáy để mọi cột có chung đường gốc khi so sánh.</p></div>
+        <div><h4>Quy luật phát hiện</h4><p><b>Quan sát:</b> Quận 1 có doanh thu cao nhất (55,7 Tr). <b>So sánh:</b> biên của Quận 1 chỉ 21,5%, thấp nhất, trong khi Quận 7 đạt 26,7% và Quận 3 đạt 27,0%. <b>Điều tra:</b> Điện tử chiếm <b>53%</b> doanh thu Quận 1, so với 19% ở Quận 7. Biên Điện tử tại Quận 1 (14,3%) tương đương các cửa hàng khác (14–17%), nên vấn đề nằm ở <b>cơ cấu</b> chứ không phải cửa hàng bán kém. Thủ Đức đứng thứ 2 về doanh thu nhưng lãi nhiều nhất (14,0 Tr).</p></div>
+        <div><h4>Vì sao quan trọng</h4><p>Cơ cấu sản phẩm quyết định lợi nhuận của cửa hàng. Quận 1 có thể tăng lợi nhuận mà không cần bán thêm, bằng cách mở rộng Thời trang (biên Thời trang tại đây 34,7%) và giảm phụ thuộc vào Điện tử.</p></div>
+      </div>
+    </article>
+
+    <figure class="chart-card explore">
+      <figcaption>
+        Khám phá: xếp hạng danh mục theo
+        <select id="metric-select" aria-label="Chọn thước đo">
+          <option value="Quantity">Số lượng bán (sản phẩm)</option>
+          <option value="Revenue">Doanh thu (Tr)</option>
+          <option value="Profit">Lợi nhuận (Tr)</option>
+          <option value="Margin">Biên lợi nhuận (%)</option>
+        </select>
+        — đổi thước đo để thấy thứ hạng thay đổi.
+      </figcaption>
+      <div class="chart chart-sm" id="c-metric"></div>
+      <p class="note"><b>Nhận xét:</b> ba thước đo cho ba thứ hạng khác nhau. Gia dụng (120 sp) và Thực phẩm &amp; Đồ uống (107 sp) dẫn đầu về <b>số lượng</b> nhưng đứng cuối về doanh thu. Điện tử bán ít nhất (79 sp) lại dẫn đầu <b>doanh thu</b>. Thời trang dẫn đầu <b>lợi nhuận</b> và <b>biên</b>. Vì vậy đánh giá hiệu suất cần dùng cả ba thước đo (xem thêm Câu hỏi 7).</p>
+    </figure>
+  </section>
+
+  <!-- ============ 3. SALES TRENDS ============ -->
+  <section class="section" id="trends">
+    <h2><span class="num">3</span> Xu hướng theo thời gian</h2>
+    <div class="toolbar">
+      Độ chi tiết:
+      <div class="seg" id="gran-seg" role="group" aria-label="Độ chi tiết thời gian">
+        <button type="button" data-gran="month" aria-pressed="true">Tháng</button>
+        <button type="button" data-gran="quarter" aria-pressed="false">Quý</button>
+      </div>
+      <span class="note">Mỗi tháng chỉ có 12–28 giao dịch, chuyển sang <b>Quý</b> để giảm nhiễu.</span>
+    </div>
+
+    <article class="insight" id="insight-3" data-n="3">
+      <header class="insight-head">
+        <span class="tag">Câu hỏi 3</span>
+        <p class="question">Khuyến mãi mùa lễ cuối năm có thực sự mang lại lợi ích?</p>
+        <span class="answer-label">Phát hiện</span>
+        <h3>Doanh thu cuối năm cao nhưng khuyến mãi sâu đã bào mòn biên lợi nhuận</h3>
+      </header>
+      <figure class="chart-card">
+        <figcaption>Doanh thu (cột, Tr), biên lợi nhuận và mức giảm giá trung bình (đường, %) theo thời gian</figcaption>
+        <div class="chart" id="c-monthly"></div>
+      </figure>
+      <figure class="chart-card">
+        <figcaption>Doanh thu theo danh mục (Tr). Bấm vào chú thích để ẩn/hiện danh mục.</figcaption>
+        <div class="chart" id="c-cattrend"></div>
+      </figure>
+      <div class="explain">
+        <div><h4>Biểu đồ cho thấy</h4><p>Dùng biểu đồ đường vì thời gian là biến liên tục. Doanh thu có 3 đỉnh: tháng 3 (21,1 Tr), tháng 7 (21,0 Tr) và tháng 11 (22,2 Tr, cao nhất năm). Hai đáy là tháng 4 (7,7 Tr) và tháng 6 (8,8 Tr). Ở hai tháng cuối năm, đường giảm giá (chấm cam) đi lên trong khi đường biên (xanh lục) đi xuống.</p></div>
+        <div><h4>Quy luật phát hiện</h4><p>Tháng 11–12, mức giảm giá trung bình là 15,7% (tháng 12 lên tới 17,6%, cao nhất năm), so với 10,3% ở các tháng khác. 42% giao dịch cuối năm được giảm ≥ 20%, trong khi các tháng khác chỉ 12%. Cùng lúc đó, biên giảm từ 25,9% xuống 22,2%, riêng tháng 12 chỉ còn 20,2%. Đáng chú ý: tháng 3 và tháng 7 cũng đạt đỉnh doanh thu tương đương (khoảng 21 Tr) dù chỉ giảm giá 10–11%, và tương quan giữa mức giảm giá với doanh thu theo tháng chỉ ở mức yếu (r = 0,31). Vậy dữ liệu <b>không cho thấy</b> giảm giá sâu làm doanh thu tăng thêm; điều thấy rõ là nó làm biên giảm. Xem theo quý, mỗi danh mục có mùa riêng: Điện tử và Thời trang bùng nổ ở quý 4, Thể thao mạnh nhất quý 1 rồi rơi xuống đáy ở quý 3, Gia dụng đạt đỉnh ở quý 3.</p></div>
+        <div><h4>Vì sao quan trọng</h4><p>Khuyến mãi đại trà mùa lễ đang làm mất lợi nhuận mà không có bằng chứng giúp bán được nhiều hơn. Nên khuyến mãi <b>có chọn lọc theo mùa của từng danh mục</b> (ví dụ đẩy Thể thao vào quý 1, Gia dụng vào quý 3) và chuẩn bị tồn kho trước các đỉnh tháng 3, 7, 11.</p></div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============ 4. CUSTOMER & TRANSACTION ============ -->
+  <section class="section" id="customers">
+    <h2><span class="num">4</span> Khách hàng &amp; giao dịch</h2>
+
+    <article class="insight" id="insight-4" data-n="4">
+      <header class="insight-head">
+        <span class="tag">Câu hỏi 4</span>
+        <p class="question">Tốc độ giao hàng ảnh hưởng thế nào đến sự hài lòng của khách?</p>
+        <span class="answer-label">Phát hiện</span>
+        <h3>Giao hàng càng chậm, điểm đánh giá càng thấp; Thủ Đức, chi nhánh xa trung tâm nhất, giao chậm nhất và bị đánh giá thấp nhất</h3>
+      </header>
+      <div class="grid-2">
+        <figure class="chart-card">
+          <figcaption>Điểm đánh giá trung bình (thang 1–5) theo số ngày giao hàng <span class="stat" id="r-delivery"></span></figcaption>
+          <div class="chart" id="c-delivery"></div>
+        </figure>
+        <figure class="chart-card">
+          <figcaption>Bản đồ nhiệt: điểm đánh giá trung bình theo cửa hàng × số ngày giao (n = số giao dịch)</figcaption>
+          <div class="chart" id="c-heatmap"></div>
+        </figure>
+      </div>
+      <figure class="chart-card">
+        <figcaption>Bản đồ 4 chi nhánh: kích thước = doanh thu, màu = số ngày giao trung bình. Vị trí là <b>trung tâm quận (minh họa)</b> vì bộ dữ liệu không có tọa độ cửa hàng. Bấm một chi nhánh để lọc.</figcaption>
+        <div class="chart" id="c-map"></div>
+      </figure>
+      <div class="explain">
+        <div><h4>Biểu đồ cho thấy</h4><p>Dùng <b>cột</b> để so sánh điểm trung bình giữa 4 mức ngày giao; <b>bản đồ nhiệt</b> để xem một ma trận hai chiều (cửa hàng × ngày giao) bằng màu; <b>bản đồ</b> vì câu hỏi có yếu tố vị trí địa lý. Điểm đánh giá trung bình giảm dần theo số ngày giao: 4,51 (1 ngày) → 4,20 (2 ngày) → 3,96 (3 ngày) → 3,63 (4 ngày). Hệ số tương quan r = −0,68 là mối quan hệ mạnh nhất trong bộ dữ liệu. Bản đồ nhiệt cho thấy quy luật này lặp lại <b>trong từng cửa hàng</b>: các ô bên trái luôn xanh, các ô bên phải luôn cam.</p></div>
+        <div><h4>Quy luật phát hiện</h4><p>Với đơn giao 3–4 ngày, 59% bị chấm dưới 4 điểm, trong khi đơn giao 1 ngày chỉ có 2%. Bản đồ cho thấy thời gian giao tăng theo khoảng cách từ trung tâm: Quận 1: 1,78 ngày → Quận 3: 2,02 → Quận 7: 2,42 → Thủ Đức: 2,72. Tại Thủ Đức, 66% đơn mất ≥ 3 ngày và điểm đánh giá trung bình thấp nhất (3,98). Lưu ý: đây là tương quan, chưa chứng minh được nhân quả.</p></div>
+        <div><h4>Vì sao quan trọng</h4><p>Thủ Đức là cửa hàng <b>lãi nhiều nhất</b> nhưng có trải nghiệm khách hàng kém nhất, nên đây là rủi ro mất khách. Đầu tư một kho trung chuyển hoặc đối tác giao hàng tại Thủ Đức là cải thiện có tác động lớn nhất.</p></div>
+      </div>
+    </article>
+
+    <article class="insight" id="insight-5" data-n="5">
+      <header class="insight-head">
+        <span class="tag">Câu hỏi 5</span>
+        <p class="question">Khách hàng của chuỗi là ai và họ thanh toán bằng cách nào?</p>
+        <span class="answer-label">Phát hiện</span>
+        <h3>Ví điện tử chiếm 41% giao dịch; khách du lịch ít nhưng mua nhiều món nhất mỗi đơn</h3>
+      </header>
+      <div class="grid-2">
+        <figure class="chart-card">
+          <figcaption>Số giao dịch (cột) và số sản phẩm trung bình mỗi giao dịch (đường) theo nhóm khách. Bấm cột để lọc.</figcaption>
+          <div class="chart" id="c-customer"></div>
+        </figure>
+        <figure class="chart-card">
+          <figcaption>Tỷ trọng số giao dịch theo phương thức thanh toán. Bấm một lát để lọc.</figcaption>
+          <div class="chart" id="c-payment"></div>
+        </figure>
+      </div>
+      <div class="explain">
+        <div><h4>Biểu đồ cho thấy</h4><p>Nhân viên văn phòng là nhóm khách lớn nhất (89 giao dịch, 37%). Đường tím (số món mỗi đơn) đạt đỉnh ở Khách du lịch (2,48 món). Biểu đồ vành khuyên phù hợp ở đây vì chỉ có 4 phần và câu hỏi là "chiếm bao nhiêu phần": Ví điện tử chiếm 40,8%.</p></div>
+        <div><h4>Quy luật phát hiện</h4><p>Khách du lịch chỉ có 27 giao dịch nhưng mua nhiều món nhất mỗi lần và có biên cao nhất trong 4 nhóm (26,9%). Ví điện tử áp đảo ở mọi nhóm khách, cao nhất ở Khách du lịch (52%) và Gia đình (45%). Chuyển khoản có biên thấp nhất (22,8%) và giao chậm nhất (2,47 ngày). Lọc riêng Gia đình + Điện tử thì biên chỉ còn 11,5%.</p></div>
+        <div><h4>Vì sao quan trọng</h4><p>Ưu đãi qua ví điện tử (hoàn tiền, tích điểm) tiếp cận được gần một nửa khách hàng, và nên dùng cách này thay cho giảm giá sâu. Với khách du lịch, nên thiết kế gói sản phẩm nhiều món để tận dụng thói quen mua nhiều.</p></div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============ 5. RELATIONSHIPS & PATTERNS ============ -->
+  <section class="section" id="relations">
+    <h2><span class="num">5</span> Quan hệ &amp; quy luật</h2>
+
+    <article class="insight" id="insight-6" data-n="6">
+      <header class="insight-head">
+        <span class="tag">Câu hỏi 6</span>
+        <p class="question">Giảm giá đến mức nào thì bắt đầu "phản tác dụng"?</p>
+        <span class="answer-label">Phát hiện</span>
+        <h3>Giảm giá từ 20% trở lên làm biên lợi nhuận rơi tự do, mọi giao dịch lỗ đều có mức giảm ≥ 25%</h3>
+      </header>
+      <div class="grid-2">
+        <figure class="chart-card">
+          <figcaption>Mỗi điểm là một giao dịch: mức giảm giá (%) × biên lợi nhuận (%). Dấu ✕ = giao dịch lỗ. Bấm một điểm để xem chi tiết. <span class="stat" id="r-discount"></span></figcaption>
+          <div class="chart" id="c-discount"></div>
+        </figure>
+        <figure class="chart-card">
+          <figcaption>Biên lợi nhuận gộp (%) theo từng mức giảm giá. Cột cam = biên dưới 20%.</figcaption>
+          <div class="chart" id="c-discount-bar"></div>
+        </figure>
+      </div>
+      <div class="explain">
+        <div><h4>Biểu đồ cho thấy</h4><p>Dùng biểu đồ phân tán vì đây là quan hệ giữa hai biến định lượng ở cấp giao dịch. Đám điểm dốc xuống rõ rệt (r = −0,71). Cột bên phải tổng hợp theo từng mức giảm: biên đi từ 33,9% (không giảm) → 25,7% (giảm 10%) → 15,4% (giảm 20%) → −1,3% (giảm 35%).</p></div>
+        <div><h4>Quy luật phát hiện</h4><p>Ngưỡng 20% là điểm gãy. 194 giao dịch giảm dưới 20% có biên 27,9%, còn 46 giao dịch giảm từ 20% trở lên chỉ đạt 13,9%. Cả 6 giao dịch lỗ (dấu ✕) đều giảm ≥ 25%, phần lớn là Điện tử (Sạc dự phòng, Loa không dây, Tai nghe không dây) và Đồ uống bổ sung đạm. Giảm sâu cũng <b>không làm khách hài lòng hơn</b>: điểm đánh giá trung bình giảm từ 4,21 xuống 3,93.</p></div>
+        <div><h4>Vì sao quan trọng</h4><p>Đề xuất <b>trần giảm giá khoảng 15%</b>, và không giảm ≥ 25% cho Điện tử vì biên gốc của nhóm này vốn đã mỏng. Khuyến mãi sâu vừa mất lợi nhuận vừa không cải thiện đánh giá.</p></div>
+      </div>
+    </article>
+
+    <article class="insight" id="insight-7" data-n="7">
+      <header class="insight-head">
+        <span class="tag">Câu hỏi 7</span>
+        <p class="question">Doanh thu đến từ việc bán nhiều món hay bán món có giá trị cao?</p>
+        <span class="answer-label">Phát hiện</span>
+        <h3>Doanh thu đến từ giá trị món hàng, không phải số lượng</h3>
+      </header>
+      <figure class="chart-card">
+        <figcaption>Số lượng × doanh thu mỗi giao dịch (Tr), kích thước điểm = đơn giá. Bấm một điểm để xem chi tiết. <span class="stat" id="r-qtyrev"></span></figcaption>
+        <div class="chart" id="c-qtyrev"></div>
+      </figure>
+      <div class="explain">
+        <div><h4>Biểu đồ cho thấy</h4><p>Dùng <b>biểu đồ phân tán dạng bong bóng</b> vì đây là quan hệ giữa hai biến định lượng (số lượng, doanh thu), còn kích thước bong bóng thể hiện thêm biến thứ ba (đơn giá). Phần lớn điểm dồn ở cột 1 món: 54% giao dịch chỉ mua một sản phẩm. Các điểm cao nhất là những bong bóng lớn (đơn giá cao), không phải các điểm nằm xa bên phải. Hai giao dịch ngoại lai khoảng 5,3 Tr là T0040 (8 tai nghe) và T0106 (6 áo khoác, lãi 1,76 Tr, giao dịch lãi nhất năm).</p></div>
+        <div><h4>Quy luật phát hiện</h4><p>Tương quan giữa số lượng và doanh thu yếu (r = 0,31), còn giữa đơn giá và doanh thu mạnh hơn nhiều (r = 0,58). Thực phẩm &amp; Đồ uống (đơn giá TB khoảng 107 nghìn ₫) mua nhiều món nhất mỗi đơn (2,82) nhưng doanh thu thấp nhất. Điện tử (đơn giá TB khoảng 992 nghìn ₫) chỉ 1,49 món mỗi đơn nhưng dẫn đầu doanh thu. 66 giao dịch trên 1 Tr đóng góp 54% tổng doanh thu.</p></div>
+        <div><h4>Vì sao quan trọng</h4><p>Muốn tăng doanh thu nên <b>nâng giá trị mỗi món</b> (bán nâng cấp, gói sản phẩm cao cấp) thay vì đẩy số lượng hàng rẻ. Các đơn lớn bất thường có thể là khách mua sỉ, nên chăm sóc riêng.</p></div>
+      </div>
+    </article>
+
+    <figure class="chart-card explore" id="pc-card">
+      <figcaption>
+        Tọa độ song song: mỗi đường là một giao dịch, màu = biên lợi nhuận. <b>Kéo dọc một trục để lọc (quét chọn).</b>
+        <span class="preset-buttons">
+          <button type="button" data-preset="loss">Giao dịch lỗ</button>
+          <button type="button" data-preset="deep">Giảm giá ≥ 25%</button>
+          <button type="button" data-preset="big">Doanh thu &gt; 2 triệu</button>
+          <button type="button" data-preset="clear">Xóa vùng chọn</button>
+        </span>
+      </figcaption>
+      <p class="pc-hint note">↔ Vuốt ngang trong khung để xem đủ 8 trục.</p>
+      <div class="pc-scroll"><div class="chart chart-lg" id="c-parcoords"></div></div>
+      <div class="pc-selection" id="pc-selection"></div>
+      <p class="note"><b>Cách đọc:</b> mỗi trục dọc là một biến, mỗi đường gấp khúc nối giá trị của một giao dịch qua các trục. Các đường cắt chéo nhau giữa hai trục kề nhau cho thấy tương quan âm, như giữa "Giảm giá" và "Biên LN". Bấm "Giao dịch lỗ" sẽ thấy cả 6 đường xuất phát từ vùng giảm giá cao, phần lớn chỉ 1–2 món, và đều có điểm đánh giá dưới 4,2. Đây là cách kiểm chứng chéo Câu hỏi 6 ở cấp từng giao dịch.</p>
+    </figure>
+  </section>
+
+  <!-- ============ 6. KEY INSIGHTS ============ -->
+  <section class="section" id="key-insights">
+    <h2><span class="num">6</span> Các phát hiện chính</h2>
+    <p class="note" style="margin:-8px 0 12px">Mỗi thẻ gồm một câu hỏi phân tích và câu trả lời rút ra từ dữ liệu. Bấm một thẻ để đi tới biểu đồ minh chứng.</p>
+    <div class="key-grid" id="key-grid"></div>
+  </section>
+
+  <!-- ============ 7. TRA CỨU GIAO DỊCH ============ -->
+  <section class="section" id="lookup">
+    <h2><span class="num">7</span> Tra cứu giao dịch</h2>
+    <p class="note" style="margin:-8px 0 12px">Bảng liệt kê từng giao dịch <b>khớp với bộ lọc ở đầu trang</b>, giúp kiểm chứng trực tiếp các con số trong những phát hiện ở trên.
+      Bấm tiêu đề cột để sắp xếp; bấm một dòng để xem chi tiết giao dịch.</p>
+    <details class="lookup" id="lookup-details">
+      <summary><span class="lookup-summary-title">Mở bảng tra cứu</span> · <span id="lookup-count">Đang tải…</span></summary>
+      <div class="lookup-tools">
+        <input type="search" id="lookup-search" placeholder="Tìm theo mã, sản phẩm, cửa hàng, danh mục…" aria-label="Tìm giao dịch">
+        <label class="lookup-check"><input type="checkbox" id="lookup-loss"> Chỉ giao dịch lỗ</label>
+        <label class="lookup-check">Số dòng mỗi trang
+          <select id="lookup-size" aria-label="Số dòng mỗi trang">
+            <option value="10">10</option><option value="15" selected>15</option><option value="30">30</option><option value="1000">Tất cả</option>
+          </select>
+        </label>
+      </div>
+      <p class="lookup-info" id="lookup-info"></p>
+      <div class="table-wrap">
+        <table class="lookup-table">
+          <thead><tr id="lookup-head"></tr></thead>
+          <tbody id="lookup-body"></tbody>
+        </table>
+      </div>
+      <div class="pager" id="lookup-pager"></div>
+    </details>
+  </section>
+
+  <!-- ============ 8. CONCLUSION ============ -->
+  <section class="section" id="conclusion">
+    <h2><span class="num">8</span> Kết luận &amp; khuyến nghị cho nhà bán lẻ</h2>
+
+    <div class="card concl-lead">
+      <p><b>Bán nhiều không đồng nghĩa với lãi nhiều.</b> Năm 2025, chuỗi bán được <b>187,8 Tr</b> nhưng chỉ giữ lại <b>47,2 Tr</b> lợi nhuận (biên 25,1%).
+        Doanh thu tập trung ở ngành Điện tử (34% doanh thu) và Quận 1 (30% doanh thu), nhưng đây lại là ngành và cửa hàng có biên thấp nhất.
+        Phân tích 7 câu hỏi ở trên cho thấy lợi nhuận bị kéo xuống bởi ba "điểm rò rỉ" chính:</p>
+      <div class="leak-grid">
+        <div class="leak">
+          <div class="leak-num">26,3 Tr</div>
+          <div class="leak-text"><b>Tiền giảm giá cả năm</b>, bằng <b>56%</b> lợi nhuận. Riêng 46 đơn giảm ≥ 20% chiếm 20% doanh thu nhưng chỉ mang về 11% lợi nhuận.</div>
+        </div>
+        <div class="leak">
+          <div class="leak-num">15,3%</div>
+          <div class="leak-text"><b>Biên của Điện tử</b>, ngành bán nhiều tiền nhất, chỉ bằng một nửa Thời trang (33,6%). Quận 1 phụ thuộc vào Điện tử nên có biên thấp nhất (21,5%).</div>
+        </div>
+        <div class="leak">
+          <div class="leak-num">55%</div>
+          <div class="leak-text"><b>Đơn ở Thủ Đức bị chấm dưới 4 điểm</b>, vì 2/3 số đơn ở đây mất ≥ 3 ngày mới giao xong. Thủ Đức lại là cửa hàng mang về nhiều lợi nhuận nhất (29,7%).</div>
+        </div>
+      </div>
+      <p class="note">Mỗi khuyến nghị bên dưới gồm: <b>bằng chứng</b> từ dữ liệu → <b>hành động</b> cụ thể → <b>tác động ước tính</b> → <b>chỉ số</b> để theo dõi kết quả. Bấm "Xem bằng chứng" để quay lại biểu đồ tương ứng.</p>
+    </div>
+
+    <div class="rec-list">
+      <!-- KN 1 -->
+      <article class="rec-card">
+        <header class="rec-head"><span class="rec-prio prio-1">Ưu tiên 1</span><h3>Đặt trần giảm giá 15%, chấm dứt giảm giá sâu</h3></header>
+        <dl class="rec-body">
+          <dt>Vì sao?</dt>
+          <dd>
+            <ul>
+              <li>Biên lợi nhuận giảm đều khi giảm giá tăng (r = −0,71): <b>33,9%</b> khi không giảm → <b>25,7%</b> ở mức 10% → <b>15,4%</b> ở mức 20% → <b>−1,3%</b> ở mức 35%.</li>
+              <li>194 đơn giảm dưới 20% có biên <b>27,9%</b>; 46 đơn giảm từ 20% trở lên chỉ còn <b>13,9%</b>, tức mất một nửa.</li>
+              <li>Cả <b>6/6 giao dịch lỗ</b> đều giảm ≥ 25%. Với Điện tử, 13 đơn giảm ≥ 20% chỉ còn biên <b>6,3%</b>.</li>
+              <li>Giảm sâu <b>không làm khách hài lòng hơn</b>: điểm đánh giá giảm từ 4,21 xuống 3,93.</li>
+            </ul>
+          </dd>
+          <dt>Hành động</dt>
+          <dd>Áp trần giảm giá 15% cho mọi danh mục. Mức trên 15% chỉ dùng cho hàng tồn lâu và phải được duyệt. Riêng Điện tử và Đồ uống bổ sung đạm (nguồn gốc của mọi giao dịch lỗ) không vượt quá 15%.</dd>
+          <dt>Tác động ước tính</dt>
+          <dd class="impact">Nếu 46 đơn đã giảm trên 15% chỉ được giảm 15% (số lượng bán giữ nguyên): <b>+3,7 Tr lợi nhuận (+7,8%)</b>, biên toàn chuỗi tăng từ 25,1% lên <b>26,6%</b> và <b>không còn giao dịch lỗ</b>.</dd>
+          <dt>Theo dõi bằng</dt>
+          <dd>Tỷ lệ đơn giảm ≥ 20% (hiện 19%, mục tiêu dưới 5%); biên lợi nhuận gộp hằng tháng (mục tiêu ≥ 26%).</dd>
+        </dl>
+        <a class="rec-link" href="#insight-6">Xem bằng chứng: Câu hỏi 6 →</a>
+      </article>
+
+      <!-- KN 2 -->
+      <article class="rec-card">
+        <header class="rec-head"><span class="rec-prio prio-1">Ưu tiên 1</span><h3>Cân bằng lại cơ cấu sản phẩm ở Quận 1</h3></header>
+        <dl class="rec-body">
+          <dt>Vì sao?</dt>
+          <dd>
+            <ul>
+              <li>Quận 1 có doanh thu cao nhất (55,7 Tr) nhưng biên thấp nhất (<b>21,5%</b>), trong khi 3 cửa hàng còn lại đạt 26,4–27,0%.</li>
+              <li>Điện tử chiếm <b>53%</b> doanh thu Quận 1 (26/72 đơn), so với 34% ở toàn chuỗi và 19% ở Quận 7.</li>
+              <li>Ngay tại Quận 1, Điện tử chỉ có biên <b>14,3%</b>, còn Thời trang đạt <b>34,7%</b>, gấp 2,4 lần. Quận 1 không bán kém; vấn đề nằm ở cơ cấu sản phẩm.</li>
+            </ul>
+          </dd>
+          <dt>Hành động</dt>
+          <dd>Đưa tỷ trọng Điện tử ở Quận 1 về mức chung của chuỗi (khoảng 34%) bằng cách tăng diện tích trưng bày Thời trang (Áo khoác, Ba lô, Giày thời trang đều có biên 33–35%). Với Điện tử: đàm phán lại giá nhập và bán kèm phụ kiện có biên cao.</dd>
+          <dt>Tác động ước tính</dt>
+          <dd class="impact">Chuyển khoảng 10,6 Tr doanh thu từ Điện tử sang Thời trang: <b>+2,2 Tr lợi nhuận cho Quận 1 (+18%)</b>, biên Quận 1 tăng từ 21,5% lên <b>25,4%</b>, ngang các cửa hàng khác.</dd>
+          <dt>Theo dõi bằng</dt>
+          <dd>Tỷ trọng Điện tử trong doanh thu Quận 1 (mục tiêu ≤ 35%); biên lợi nhuận Quận 1 (mục tiêu ≥ 25%).</dd>
+        </dl>
+        <a class="rec-link" href="#insight-2">Xem bằng chứng: Câu hỏi 1 và 2 →</a>
+      </article>
+
+      <!-- KN 3 -->
+      <article class="rec-card">
+        <header class="rec-head"><span class="rec-prio prio-2">Ưu tiên 2</span><h3>Rút ngắn thời gian giao hàng tại Thủ Đức xuống ≤ 2 ngày</h3></header>
+        <dl class="rec-body">
+          <dt>Vì sao?</dt>
+          <dd>
+            <ul>
+              <li>Điểm đánh giá giảm theo số ngày giao (r = −0,68, mối quan hệ mạnh nhất trong dữ liệu): <b>4,51</b> (1 ngày) → 4,20 → 3,96 → <b>3,63</b> (4 ngày).</li>
+              <li>Đơn giao 1 ngày chỉ có <b>2%</b> bị chấm dưới 4 điểm; đơn giao 4 ngày thì có tới <b>92%</b>.</li>
+              <li>Ở Thủ Đức, <b>66%</b> đơn mất ≥ 3 ngày (Quận 1 chỉ 15%); <b>30/55 đơn</b> bị chấm dưới 4 điểm, trong đó 25 đơn là giao ≥ 3 ngày.</li>
+              <li>Thủ Đức đóng góp <b>29,7%</b> lợi nhuận chuỗi, nhiều nhất, nên trải nghiệm kém ở đây là rủi ro mất khách lớn nhất.</li>
+            </ul>
+          </dd>
+          <dt>Hành động</dt>
+          <dd>Đặt kho trung chuyển hoặc hợp tác đơn vị giao nhanh nội khu tại Thủ Đức; cam kết giao ≤ 2 ngày và hiển thị thời gian giao dự kiến khi khách đặt hàng.</dd>
+          <dt>Tác động ước tính</dt>
+          <dd class="impact">Nếu Thủ Đức giao nhanh như Quận 1 (86% đơn trong 1–2 ngày), điểm đánh giá dự kiến tăng từ <b>3,98 lên khoảng 4,28</b> (+0,3 điểm), ngang Quận 1. Ước tính dựa trên điểm trung bình theo số ngày giao của toàn chuỗi.</dd>
+          <dt>Theo dõi bằng</dt>
+          <dd>Tỷ lệ đơn giao ≥ 3 ngày tại Thủ Đức (mục tiêu dưới 20%); điểm đánh giá trung bình (mục tiêu ≥ 4,2).</dd>
+        </dl>
+        <a class="rec-link" href="#insight-4">Xem bằng chứng: Câu hỏi 4 →</a>
+      </article>
+
+      <!-- KN 4 -->
+      <article class="rec-card">
+        <header class="rec-head"><span class="rec-prio prio-2">Ưu tiên 2</span><h3>Khuyến mãi theo mùa của từng danh mục, không giảm giá đại trà cuối năm</h3></header>
+        <dl class="rec-body">
+          <dt>Vì sao?</dt>
+          <dd>
+            <ul>
+              <li>Tháng 11–12 chiếm <b>22,2%</b> doanh thu năm, nhưng <b>42%</b> số đơn được giảm ≥ 20% (các tháng khác 12%), nên biên chỉ còn <b>22,2%</b> so với 25,9%.</li>
+              <li>Tháng 3 và tháng 7 vẫn đạt đỉnh doanh thu tương đương (khoảng 21 Tr) dù chỉ giảm 10–11%, nghĩa là <b>doanh thu cao không cần đến giảm giá sâu</b>.</li>
+              <li>Mỗi danh mục có mùa riêng: Thể thao ở quý 1 cao gấp <b>3,0 lần</b> quý 3; Gia dụng ở quý 3 gấp <b>3,9 lần</b> quý 2; Điện tử và Thời trang đạt đỉnh ở quý 4. Ba tháng đỉnh (3, 7, 11) chiếm 34% doanh thu năm.</li>
+            </ul>
+          </dd>
+          <dt>Hành động</dt>
+          <dd>Nhập hàng sớm trước 3 tháng đỉnh. Chạy khuyến mãi có chọn lọc theo mùa của từng danh mục (Thể thao ở quý 1, Gia dụng ở quý 3), giữ trần 15% kể cả mùa lễ. Dùng các tháng thấp điểm (tháng 4, 6) để xả hàng tồn có kiểm soát.</dd>
+          <dt>Tác động ước tính</dt>
+          <dd class="impact">Nếu tháng 11–12 giữ được biên như các tháng khác (25,9%): <b>+1,5 Tr lợi nhuận</b>. Phần này trùng một phần với Ưu tiên 1, nên không cộng dồn.</dd>
+          <dt>Theo dõi bằng</dt>
+          <dd>Biên lợi nhuận tháng 11–12 (mục tiêu ≥ 25%); tỷ lệ hết hàng trong các tháng đỉnh.</dd>
+        </dl>
+        <a class="rec-link" href="#insight-3">Xem bằng chứng: Câu hỏi 3 →</a>
+      </article>
+
+      <!-- KN 5 -->
+      <article class="rec-card">
+        <header class="rec-head"><span class="rec-prio prio-3">Ưu tiên 3</span><h3>Tăng giá trị mỗi đơn hàng thay vì đẩy số lượng hàng rẻ</h3></header>
+        <dl class="rec-body">
+          <dt>Vì sao?</dt>
+          <dd>
+            <ul>
+              <li>Doanh thu đi theo <b>đơn giá</b> (r = 0,58) nhiều hơn theo <b>số lượng</b> (r = 0,31).</li>
+              <li><b>54%</b> đơn chỉ mua 1 sản phẩm, trong khi 66 đơn trên 1 Tr (28% số đơn) mang về <b>54% doanh thu</b> và 52% lợi nhuận.</li>
+              <li>Khách du lịch mua nhiều món nhất (<b>2,48 món/đơn</b>); Ví điện tử là kênh của <b>41%</b> số đơn và 43% doanh thu.</li>
+            </ul>
+          </dd>
+          <dt>Hành động</dt>
+          <dd>Thiết kế gói sản phẩm (Điện tử kèm phụ kiện, bộ trang phục Thời trang), gợi ý mua kèm khi thanh toán. Thay giảm giá trực tiếp bằng hoàn tiền qua Ví điện tử cho đơn từ 1 Tr trở lên.</dd>
+          <dt>Tác động ước tính</dt>
+          <dd class="impact">Mỗi <b>10%</b> tăng giá trị trung bình mỗi đơn (từ 783 lên khoảng 861 nghìn đồng), với biên hiện tại, tương đương <b>+4,7 Tr lợi nhuận</b>. Cần thử nghiệm trước để biết mức tăng thực tế.</dd>
+          <dt>Theo dõi bằng</dt>
+          <dd>Giá trị trung bình mỗi đơn; tỷ lệ đơn có từ 2 sản phẩm trở lên (hiện 46%).</dd>
+        </dl>
+        <a class="rec-link" href="#insight-7">Xem bằng chứng: Câu hỏi 5 và 7 →</a>
+      </article>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title">Tổng hợp tác động ước tính</h3>
+      <div class="table-wrap">
+        <table class="impact-table">
+          <thead><tr><th>Khuyến nghị</th><th>Tác động ước tính</th><th>Độ tin cậy</th><th>Lý do</th></tr></thead>
+          <tbody>
+            <tr><td>1. Trần giảm giá 15%</td><td class="num-cell">+3,7 Tr (+7,8% lợi nhuận)</td><td><span class="conf conf-hi">Cao</span></td><td>Bằng chứng mạnh (r = −0,71, 6/6 đơn lỗ); giả định số lượng bán không đổi nên đây là mức tối đa.</td></tr>
+            <tr><td>2. Cơ cấu Quận 1</td><td class="num-cell">+2,2 Tr (+18% lợi nhuận Quận 1)</td><td><span class="conf conf-mid">Trung bình</span></td><td>Phụ thuộc vào việc bán thêm được Thời trang ở Quận 1.</td></tr>
+            <tr><td>3. Giao hàng Thủ Đức</td><td class="num-cell">Đánh giá +0,3 điểm</td><td><span class="conf conf-mid">Trung bình</span></td><td>Tương quan mạnh nhưng chưa chứng minh nhân quả.</td></tr>
+            <tr><td>4. Khuyến mãi theo mùa</td><td class="num-cell">+1,5 Tr (trùng một phần với 1)</td><td><span class="conf conf-mid">Trung bình</span></td><td>Dữ liệu chỉ có một năm.</td></tr>
+            <tr><td>5. Giá trị đơn hàng</td><td class="num-cell">+4,7 Tr cho mỗi +10% giá trị đơn</td><td><span class="conf conf-lo">Thấp</span></td><td>Cần thử nghiệm A/B để đo mức tăng thực tế.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="concl-total">Riêng hai khuyến nghị ưu tiên 1, vốn ít trùng nhau, đã có thể mang thêm tối đa khoảng <b>5–6 Tr lợi nhuận mỗi năm (≈ +12%)</b> mà <b>không cần bán thêm</b>: chỉ cần giảm giá hợp lý hơn và bán đúng mặt hàng hơn.</p>
+    </div>
+
+    <div class="grid-2 concl-foot">
+      <div class="card">
+        <h3 class="card-title">Giới hạn của phân tích</h3>
+        <ul class="tight">
+          <li>Cỡ mẫu nhỏ: 240 giao dịch, chỉ 12–28 giao dịch mỗi tháng, nên xu hướng theo tháng có nhiễu.</li>
+          <li>Dữ liệu chỉ có một năm, chưa khẳng định được tính mùa vụ có lặp lại hay không.</li>
+          <li>Hệ số tương quan không chứng minh nhân quả. Các ước tính tác động giả định hành vi mua không đổi.</li>
+          <li>Vị trí cửa hàng trên bản đồ là trung tâm quận (minh họa).</li>
+          <li>6 giao dịch thiếu điểm đánh giá và 4 giao dịch thiếu số ngày giao được loại khỏi các phép tính liên quan.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 class="card-title">Bước tiếp theo đề xuất</h3>
+        <ul class="tight">
+          <li>Thử nghiệm trần giảm giá 15% tại một cửa hàng trong 2–3 tháng rồi so sánh với cửa hàng đối chứng.</li>
+          <li>Thu thập thêm dữ liệu nhiều năm để xác nhận tính mùa vụ.</li>
+          <li>Ghi nhận địa chỉ giao hàng và chi phí vận chuyển để tính chính xác ảnh hưởng của khoảng cách.</li>
+          <li>Theo dõi tỷ lệ khách quay lại để đo tác động thực sự của điểm đánh giá lên doanh thu.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<aside class="detail" id="detail" hidden aria-live="polite">
+  <button class="detail-close" id="detail-close" type="button" aria-label="Đóng">×</button>
+  <h3>Chi tiết giao dịch</h3>
+  <dl id="detail-body"></dl>
+</aside>
+
+<footer class="footer">
+  <div class="container">Lê Văn Hoàng Son · 25C02026 · Môn Trực quan hóa dữ liệu. Dữ liệu: Doanh số bán lẻ đô thị TP.HCM 2025 (240 giao dịch). Biểu đồ: Plotly.js; bản đồ nền: © những người đóng góp OpenStreetMap.</div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/lookup.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
